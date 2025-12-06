@@ -44,20 +44,48 @@ const Profile = ({ showNotification }) => {
 
   const loadUserData = async () => {
     try {
-      // Load user stats
-      const statsResponse = await authService.getStats()
-      if (statsResponse.success) {
-        setStats(statsResponse.stats)
+      // Load user stats with fallback
+      try {
+        const statsResponse = await authService.getStats()
+        if (statsResponse && statsResponse.success) {
+          setStats(statsResponse.stats)
+        } else {
+          // Set default stats if API fails
+          setStats({
+            totalQuizzes: 0,
+            totalWords: 0,
+            totalAttempts: 0,
+            correctWords: 0,
+            averageScore: 0,
+            recentActivity: []
+          })
+        }
+      } catch (err) {
+        console.error('Stats load error:', err)
+        setStats({
+          totalQuizzes: 0,
+          totalWords: 0,
+          totalAttempts: 0,
+          correctWords: 0,
+          averageScore: 0,
+          recentActivity: []
+        })
       }
 
-      // Load quiz history
-      const historyResponse = await apiService.getUserQuizHistory(user.id, 1, 10)
-      if (historyResponse.success) {
-        setQuizHistory(historyResponse.history)
+      // Load quiz history with fallback
+      try {
+        const historyResponse = await apiService.getUserQuizHistory(user.id, 1, 10)
+        if (historyResponse && historyResponse.success) {
+          setQuizHistory(historyResponse.history)
+        } else {
+          setQuizHistory([])
+        }
+      } catch (err) {
+        console.error('History load error:', err)
+        setQuizHistory([])
       }
     } catch (error) {
       console.error('Profile data load error:', error)
-      showNotification('Failed to load profile data', 'error')
     } finally {
       setLoading(false)
     }
@@ -139,7 +167,7 @@ const Profile = ({ showNotification }) => {
       </Paper>
 
       {/* Statistics Overview */}
-      {stats && (
+      {stats ? (
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} md={3}>
             <Card elevation={2}>
@@ -197,6 +225,10 @@ const Profile = ({ showNotification }) => {
             </Card>
           </Grid>
         </Grid>
+      ) : (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography>Loading statistics...</Typography>
+        </Box>
       )}
 
       {/* Recent Activity */}

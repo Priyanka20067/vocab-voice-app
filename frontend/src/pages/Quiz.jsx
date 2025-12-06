@@ -88,15 +88,11 @@ const Quiz = ({ showNotification }) => {
         if (attemptResponse.success) {
           setFeedback(attemptResponse.result)
           
-          // Auto-advance if correct or max attempts reached
-          if (attemptResponse.result.nextAction === 'next_word') {
-            setTimeout(() => {
-              handleNextWord()
-            }, 3000)
-          } else if (attemptResponse.result.nextAction === 'quiz_completed') {
+          // Auto-advance only if quiz completed
+          if (attemptResponse.result.nextAction === 'quiz_completed') {
             setTimeout(() => {
               navigate(`/results/${sessionId}`)
-            }, 3000)
+            }, 2000)
           }
         }
       }
@@ -112,6 +108,34 @@ const Quiz = ({ showNotification }) => {
     setCurrentAttempt(null)
     setFeedback(null)
     await loadQuiz() // Reload to get updated quiz state
+  }
+
+  const handleSkipWord = async () => {
+    if (!quiz?.currentWord) return
+
+    try {
+      // Submit a skip attempt to mark word as completed
+      const skipResponse = await apiService.submitAttempt(sessionId, {
+        transcript: 'skipped',
+        pronunciationScore: 0,
+        spellingScore: 0,
+        feedback: 'Word skipped',
+        isCorrect: false
+      })
+
+      if (skipResponse.success) {
+        if (skipResponse.result.nextAction === 'quiz_completed') {
+          navigate(`/results/${sessionId}`)
+        } else {
+          setCurrentAttempt(null)
+          setFeedback(null)
+          await loadQuiz()
+        }
+      }
+    } catch (error) {
+      console.error('Skip word error:', error)
+      showNotification('Failed to skip word', 'error')
+    }
   }
 
   const handleRetry = () => {
@@ -295,13 +319,23 @@ const Quiz = ({ showNotification }) => {
           {/* Action Buttons */}
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
             {feedback.nextAction === 'retry' && feedback.attemptsLeft > 0 && (
-              <Button
-                variant="outlined"
-                startIcon={<Refresh />}
-                onClick={handleRetry}
-              >
-                Try Again ({feedback.attemptsLeft} attempts left)
-              </Button>
+              <>
+                <Button
+                  variant="outlined"
+                  startIcon={<Refresh />}
+                  onClick={handleRetry}
+                >
+                  Try Again ({feedback.attemptsLeft} attempts left)
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  startIcon={<ArrowForward />}
+                  onClick={handleSkipWord}
+                >
+                  Skip Word
+                </Button>
+              </>
             )}
 
             {(feedback.nextAction === 'next_word' || feedback.attemptsLeft === 0) && (

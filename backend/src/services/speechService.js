@@ -94,18 +94,54 @@ Be strict but encouraging. Focus on ${mode === 'pronounce' ? 'pronunciation accu
   }
 
   fallbackEvaluation(targetWord, transcript, mode) {
-    // Simple fallback evaluation
-    const similarity = this.calculateStringSimilarity(targetWord, transcript);
+    // Normalize both strings for comparison
+    const normalizedTarget = targetWord.toLowerCase().trim();
+    const normalizedTranscript = transcript.toLowerCase().trim();
+    
+    // Check exact match first
+    if (normalizedTarget === normalizedTranscript) {
+      return {
+        word: targetWord,
+        transcript: transcript,
+        pronunciationScore: 100,
+        spellingScore: 100,
+        feedback: '🎉 Perfect! Excellent pronunciation!',
+        isCorrect: true,
+        retry: false,
+        phoneticSimilarity: 100
+      };
+    }
+    
+    // Calculate similarity
+    const similarity = this.calculateStringSimilarity(normalizedTarget, normalizedTranscript);
     const score = Math.round(similarity * 100);
+    
+    // More lenient scoring
+    let isCorrect = false;
+    let feedback = '';
+    
+    if (score >= 90) {
+      isCorrect = true;
+      feedback = '✅ Excellent! Very close pronunciation!';
+    } else if (score >= 75) {
+      isCorrect = true;
+      feedback = '👍 Good job! Minor differences but well done!';
+    } else if (score >= 60) {
+      isCorrect = false;
+      feedback = `⚠️ Close! You said "${transcript}". Try saying "${targetWord}" again.`;
+    } else {
+      isCorrect = false;
+      feedback = `❌ Not quite. You said "${transcript}". The word is "${targetWord}". Try again!`;
+    }
     
     return {
       word: targetWord,
       transcript: transcript,
       pronunciationScore: score,
       spellingScore: score,
-      feedback: score >= 70 ? 'Good attempt!' : `Try to pronounce "${targetWord}" more clearly.`,
-      isCorrect: score >= 70,
-      retry: score < 70,
+      feedback: feedback,
+      isCorrect: isCorrect,
+      retry: !isCorrect,
       phoneticSimilarity: score
     };
   }
