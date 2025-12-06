@@ -1,6 +1,11 @@
 const express = require('express');
 const Quiz = require('../models/Quiz');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+
+// Generate UUID v4
+const uuidv4 = () => {
+  return crypto.randomUUID();
+};
 
 const router = express.Router();
 
