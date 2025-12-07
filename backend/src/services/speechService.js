@@ -96,7 +96,12 @@ Be strict but encouraging. Focus on ${mode === 'pronounce' ? 'pronunciation accu
   fallbackEvaluation(targetWord, transcript, mode) {
     // Normalize both strings for comparison
     const normalizedTarget = targetWord.toLowerCase().trim();
-    const normalizedTranscript = transcript.toLowerCase().trim();
+    let normalizedTranscript = transcript.toLowerCase().trim();
+    
+    // For spelling mode, remove spaces and dashes (e.g., "a-p-p-l-e" or "a p p l e" -> "apple")
+    if (mode === 'spell') {
+      normalizedTranscript = normalizedTranscript.replace(/[\s-]/g, '');
+    }
     
     // Check exact match first
     if (normalizedTarget === normalizedTranscript) {
@@ -105,7 +110,7 @@ Be strict but encouraging. Focus on ${mode === 'pronounce' ? 'pronunciation accu
         transcript: transcript,
         pronunciationScore: 100,
         spellingScore: 100,
-        feedback: '🎉 Perfect! Excellent pronunciation!',
+        feedback: mode === 'spell' ? '🎉 Perfect spelling!' : '🎉 Perfect! Excellent pronunciation!',
         isCorrect: true,
         retry: false,
         phoneticSimilarity: 100
@@ -120,18 +125,36 @@ Be strict but encouraging. Focus on ${mode === 'pronounce' ? 'pronunciation accu
     let isCorrect = false;
     let feedback = '';
     
-    if (score >= 90) {
-      isCorrect = true;
-      feedback = '✅ Excellent! Very close pronunciation!';
-    } else if (score >= 75) {
-      isCorrect = true;
-      feedback = '👍 Good job! Minor differences but well done!';
-    } else if (score >= 60) {
-      isCorrect = false;
-      feedback = `⚠️ Close! You said "${transcript}". Try saying "${targetWord}" again.`;
+    if (mode === 'spell') {
+      // Stricter for spelling mode
+      if (score >= 90) {
+        isCorrect = true;
+        feedback = '✅ Excellent spelling!';
+      } else if (score >= 75) {
+        isCorrect = true;
+        feedback = '👍 Good! Minor mistake but well done!';
+      } else if (score >= 60) {
+        isCorrect = false;
+        feedback = `⚠️ Close! You spelled "${normalizedTranscript}". The correct spelling is "${targetWord}". Try again!`;
+      } else {
+        isCorrect = false;
+        feedback = `❌ Not quite. You spelled "${normalizedTranscript}". The word is "${targetWord}". Try again!`;
+      }
     } else {
-      isCorrect = false;
-      feedback = `❌ Not quite. You said "${transcript}". The word is "${targetWord}". Try again!`;
+      // Pronunciation mode
+      if (score >= 90) {
+        isCorrect = true;
+        feedback = '✅ Excellent! Very close pronunciation!';
+      } else if (score >= 75) {
+        isCorrect = true;
+        feedback = '👍 Good job! Minor differences but well done!';
+      } else if (score >= 60) {
+        isCorrect = false;
+        feedback = `⚠️ Close! You said "${transcript}". Try saying "${targetWord}" again.`;
+      } else {
+        isCorrect = false;
+        feedback = `❌ Not quite. You said "${transcript}". The word is "${targetWord}". Try again!`;
+      }
     }
     
     return {
