@@ -17,7 +17,8 @@ import {
   Switch,
   FormControlLabel,
   Divider,
-  Alert
+  Alert,
+  TextField
 } from '@mui/material'
 import { 
   Person,
@@ -147,6 +148,35 @@ const Profile = ({ showNotification }) => {
             {editMode ? 'Cancel' : 'Edit Profile'}
           </Button>
         </Box>
+        
+        {editMode && (
+          <Box sx={{ mt: 2, mb: 2 }}>
+            <TextField
+              fullWidth
+              label="Username"
+              value={editData.username}
+              onChange={(e) => setEditData({ ...editData, username: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={editData.email}
+              onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <Button
+              variant="contained"
+              onClick={async () => {
+                showNotification('Profile update feature coming soon!', 'info')
+                setEditMode(false)
+              }}
+            >
+              Save Changes
+            </Button>
+          </Box>
+        )}
         
         <Divider sx={{ my: 2 }} />
         
