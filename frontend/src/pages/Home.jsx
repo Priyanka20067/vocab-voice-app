@@ -111,8 +111,11 @@ const Home = ({ showNotification }) => {
         <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
           🎯 AI Vocabulary Learning Assistant
         </Typography>
-        <Typography variant="h6" sx={{ mb: 3, opacity: 0.9 }}>
+        <Typography variant="h6" sx={{ mb: 2, opacity: 0.9 }}>
           Upload an image with text, and practice pronunciation with AI-powered feedback
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 3, opacity: 0.85, maxWidth: 800, mx: 'auto' }}>
+          Get instant AI feedback on your pronunciation and spelling, and track your learning progress over time with detailed performance insights.
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
           <Chip icon={<CloudUpload />} label="OCR Text Extraction" color="primary" />
