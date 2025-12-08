@@ -16,7 +16,7 @@ import {
   Settings
 } from '@mui/icons-material'
 
-const TextToSpeech = ({ text, autoPlay = false, showControls = true }) => {
+const TextToSpeech = ({ text, autoPlay = false, showControls = true, mode = 'pronounce' }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [voices, setVoices] = useState([])
   const [selectedVoice, setSelectedVoice] = useState('')
@@ -66,7 +66,13 @@ const TextToSpeech = ({ text, autoPlay = false, showControls = true }) => {
     // Cancel any ongoing speech
     speechSynthesis.cancel()
 
-    const utterance = new SpeechSynthesisUtterance(text)
+    // For spelling mode, spell out each letter
+    let textToSpeak = text
+    if (mode === 'spell') {
+      textToSpeak = text.split('').join('. ') + '.'
+    }
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak)
     
     // Find selected voice
     const voice = voices.find(v => v.name === selectedVoice)
