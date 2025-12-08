@@ -36,7 +36,9 @@ const Profile = ({ showNotification }) => {
   const [stats, setStats] = useState(null)
   const [quizHistory, setQuizHistory] = useState([])
   const [loading, setLoading] = useState(true)
-  const [darkMode, setDarkMode] = useState(user?.preferences?.theme === 'dark')
+  const [darkMode, setDarkMode] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [editData, setEditData] = useState({ username: user?.username || '', email: user?.email || '' })
 
   useEffect(() => {
     loadUserData()
@@ -44,39 +46,13 @@ const Profile = ({ showNotification }) => {
 
   const loadUserData = async () => {
     try {
-      // Load user stats with fallback
+      // Load quiz history first to calculate stats
+      let quizData = []
       try {
-        const statsResponse = await authService.getStats()
-        if (statsResponse && statsResponse.success) {
-          setStats(statsResponse.stats)
-        } else {
-          // Set default stats if API fails
-          setStats({
-            totalQuizzes: 0,
-            totalWords: 0,
-            totalAttempts: 0,
-            correctWords: 0,
-            averageScore: 0,
-            recentActivity: []
-          })
-        }
-      } catch (err) {
-        console.error('Stats load error:', err)
-        setStats({
-          totalQuizzes: 0,
-          totalWords: 0,
-          totalAttempts: 0,
-          correctWords: 0,
-          averageScore: 0,
-          recentActivity: []
-        })
-      }
-
-      // Load quiz history with fallback
-      try {
-        const historyResponse = await apiService.getUserQuizHistory(user.id, 1, 10)
+        const historyResponse = await apiService.getUserQuizHistory(user.id, 1, 100)
         if (historyResponse && historyResponse.success) {
-          setQuizHistory(historyResponse.history)
+          quizData = historyResponse.history
+          setQuizHistory(quizData)
         } else {
           setQuizHistory([])
         }
@@ -84,6 +60,29 @@ const Profile = ({ showNotification }) => {
         console.error('History load error:', err)
         setQuizHistory([])
       }
+
+      // Calculate stats from quiz data
+      const completedQuizzes = quizData.filter(q => q.status === 'completed')
+      const totalWords = completedQuizzes.reduce((sum, q) => sum + (q.totalWords || 0), 0)
+      const totalScore = completedQuizzes.reduce((sum, q) => sum + (q.overallScore || 0), 0)
+      const avgScore = completedQuizzes.length > 0 ? Math.round(totalScore / completedQuizzes.length) : 0
+      
+      setStats({
+        totalQuizzes: completedQuizzes.length,
+        totalWords: totalWords,
+        totalAttempts: totalWords, // Approximate
+        correctWords: Math.round(totalWords * (avgScore / 100)),
+        averageScore: avgScore,
+        recentActivity: completedQuizzes.slice(0, 5).map(q => ({
+          sessionId: q.sessionId,
+          score: q.overallScore || 0,
+          wordsCount: q.totalWords || 0,
+          completedAt: q.completedAt,
+          mode: q.mode
+        }))
+      })
+
+
     } catch (error) {
       console.error('Profile data load error:', error)
     } finally {
@@ -97,10 +96,10 @@ const Profile = ({ showNotification }) => {
     
     const result = await updatePreferences({ theme: newTheme })
     if (result.success) {
-      showNotification('Theme updated successfully', 'success')
+      showNotification('Theme preference saved', 'success')
     } else {
       showNotification('Failed to update theme', 'error')
-      setDarkMode(!event.target.checked) // Revert on error
+      setDarkMode(!event.target.checked)
     }
   }
 
@@ -132,16 +131,21 @@ const Profile = ({ showNotification }) => {
     <Box>
       {/* Profile Header */}
       <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <Person sx={{ fontSize: 40, color: 'primary.main' }} />
-          <Box>
-            <Typography variant="h4" fontWeight="bold">
-              {user?.username}
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {user?.email}
-            </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Person sx={{ fontSize: 40, color: 'primary.main' }} />
+            <Box>
+              <Typography variant="h4" fontWeight="bold">
+                {user?.username}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {user?.email}
+              </Typography>
+            </Box>
           </Box>
+          <Button variant="outlined" onClick={() => setEditMode(!editMode)}>
+            {editMode ? 'Cancel' : 'Edit Profile'}
+          </Button>
         </Box>
         
         <Divider sx={{ my: 2 }} />
